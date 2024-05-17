@@ -3,6 +3,7 @@ import json
 from openai import OpenAI
 from dotenv import load_dotenv
 
+# you need to have a .env file with OPENAI_API_KEY='<your_openai_api_key>'
 load_dotenv()
 client = OpenAI()
 
