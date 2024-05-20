@@ -1,0 +1,87 @@
+
+from functools import partial
+from tqdm import tqdm
+
+import torch
+from torch.utils.data import DataLoader
+
+from datasets import load_dataset
+
+from transformer_lens import HookedTransformer
+import transformer_lens.utils as tutils
+
+
+def patch_resid(resid, hook, steering, c=1, pos=0):
+    assert len(steering.shape) == 3 # [batch_size, sequence_length, d_model]
+    n_toks = min(resid.shape[1] - pos, steering.shape[1])
+
+    if pos < resid.shape[1]:
+        resid[:, pos:n_toks+pos, :] = resid[:, pos:n_toks+pos, :] + c * steering[:, :n_toks, :]
+    
+    return resid
+
+
+def get_loss(
+        model: HookedTransformer,
+        hook_point: str,
+        steering_vector=None,
+        scales=None,
+        ds_name="NeelNanda/c4-code-20k",
+        n_batches=20,
+        batch_size=8,
+    ):
+    if scales is None:
+        scales = [1]
+    elif not isinstance(scales, list):
+        scales = [scales]
+    losses = []
+
+    print(f'loading dataset: {ds_name}')
+    data = load_dataset(ds_name, split="train")
+    tokenized_data = tutils.tokenize_and_concatenate(data, model.tokenizer, max_length=128)
+    tokenized_data = tokenized_data.shuffle(42)
+    loader = DataLoader(tokenized_data, batch_size=batch_size)
+    print('dataset loaded')
+
+    for scale in tqdm(scales):
+        total_loss = 0
+        for i, batch in enumerate(loader):
+            with model.hooks(fwd_hooks=[(hook_point, partial(patch_resid,
+                                                            steering=steering_vector,
+                                                            c=scale,
+                                                            pos=0,
+                                                            ))]):
+                loss = model(batch["tokens"], return_type="loss", prepend_bos=False)
+                total_loss += loss.item()
+            if i == n_batches:
+                break
+        losses.append(total_loss / n_batches)
+    
+    return losses
+
+
+def generate(
+        model: HookedTransformer,
+        hook_point: str,
+        prompt = "",
+        steering_vector=None,
+        scale=1,
+        n_samples=5,
+        max_length=20,
+    ):
+    gen_texts = []
+    with model.hooks(fwd_hooks=[(hook_point, partial(patch_resid,
+                                                    steering=steering_vector,
+                                                    c=scale,
+                                                    pos=0,
+                                                    ))]):
+        for _ in tqdm(range(n_samples)):
+            output = model.generate(prompt,
+                                    prepend_bos=True,
+                                    use_past_kv_cache=False,
+                                    max_new_tokens=max_length,
+                                    verbose=False,
+                                    )
+            gen_texts.append(output)
+    return gen_texts
+    

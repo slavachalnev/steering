@@ -1,6 +1,8 @@
+###
+# These utils are mostly for steering vector creation. 
+###
 
 from typing import List, Tuple
-
 import torch
 from transformer_lens import HookedTransformer
 from sae_lens import SparseAutoencoder
