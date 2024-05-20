@@ -62,23 +62,37 @@ def get_sae_diff_steering(model: HookedTransformer, hook_point: str, sae: Sparse
 
     return steering, pos_sae_acts, neg_sae_acts
 
-
 @torch.no_grad()
 def remove_sae_feats(
         steering_vec: torch.Tensor,
         sae: SparseAutoencoder,
-        feats_to_remove: List[Tuple[int, float]],
+        feats_to_remove: List[Tuple[int, int, float]],
     ):
     """
-    Removes the features in feats_to_remove from the steering vector.
+    Removes specified features from the steering vector for specified positions.
+    
+    Args:
+        steering_vec (torch.Tensor): The steering vector. Shape: [batch_size, sequence_length, hidden_dim]
+        sae (SparseAutoencoder): The sparse autoencoder model.
+        feats_to_remove (List[Tuple[int, int, float]] or List[Tuple[int, float]]): A list of tuples where each tuple contains:
+            - position (int, optional): The sequence position to remove the feature from.
+            - feature index (int): The index of the feature to remove.
+            - value (float): The value to remove for the specified feature.
+    
+    Returns:
+        torch.Tensor: The modified steering vector with specified features removed.
     """
-    # TODO: handle multi-postion steering_vec
-
     steering_vec = steering_vec.detach().clone()
 
-    for feat_idx, val in feats_to_remove:
-        vec_to_remove = sae.W_dec[feat_idx, :] * val
-        steering_vec -= vec_to_remove
+    for feat_info in feats_to_remove:
+        if len(feat_info) == 3:
+            pos, feat_idx, val = feat_info
+            vec_to_remove = sae.W_dec[feat_idx, :] * val
+            steering_vec[:, pos, :] -= vec_to_remove
+        elif len(feat_info) == 2:
+            feat_idx, val = feat_info
+            vec_to_remove = sae.W_dec[feat_idx, :] * val
+            steering_vec -= vec_to_remove
     
     return steering_vec
 
