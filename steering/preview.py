@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from transformer_lens import HookedTransformer
 from transformer_lens import utils as tutils
 from transformer_lens.evals import make_pile_data_loader, evaluate_on_dataset
-
+from tqdm import tqdm
 
 from steering.visualization import Table
 
