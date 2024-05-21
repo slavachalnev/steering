@@ -125,10 +125,23 @@ def text_to_sae_feats(
 
 
 @torch.no_grad()
-def top_activations(activations: torch.Tensor, top_k: int):
+def top_activations(activations: torch.Tensor, top_k: int=10):
     """
     Returns the top_k activations for each position in the sequence.
     """
     top_v, top_i = torch.topk(activations, top_k, dim=-1)
 
     return top_v, top_i
+
+
+@torch.no_grad()
+def normalise_decoder(sae):
+    """
+    Normalises the decoder weights of the SAE to have unit norm.
+    
+    Use this when loading for gemma-2b saes.
+    """
+    norms = torch.norm(sae.W_dec, dim=1)
+    sae.W_dec /= norms[:, None]
+    sae.W_enc *= norms[None, :]
+    sae.b_enc *= norms
