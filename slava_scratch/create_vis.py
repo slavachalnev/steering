@@ -17,7 +17,7 @@ torch.set_grad_enabled(False)
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = HookedTransformer.from_pretrained("gemma-2b", device=device)
+model = HookedTransformer.from_pretrained("gemma-2b", device='cpu')
 
 
 hp_6 = "blocks.6.hook_resid_post"
@@ -44,14 +44,16 @@ def get_tokens(
     return all_tokens
 
 
-all_tokens = get_tokens(activation_store)
+all_tokens = get_tokens(activation_store).to(device)
 
+model = model.to(device)
+sae_6 = sae_6.to(device)
 
 
 n_features = sae_6.cfg.d_sae
 
-test_feature_idx_gpt = range(100)
-bs = 8
+test_feature_idx_gpt = range(n_features)
+bs = 4
 
 feature_vis_config_gpt = SaeVisConfig(
     hook_point=hp_6,
@@ -78,4 +80,7 @@ for idx, feature in enumerate(test_feature_idx_gpt):
     if sae_vis_data_gpt.feature_stats.max[idx] == 0:
         continue
     filename = os.path.join(vis_dir, f"{feature}_feature_vis.html")
-    sae_vis_data_gpt.save_feature_centric_vis(filename, feature)
+    try:
+        sae_vis_data_gpt.save_feature_centric_vis(filename, feature)
+    except ZeroDivisionError:
+        print(f"Skipped feature {feature} due to ZeroDivisionError.")
