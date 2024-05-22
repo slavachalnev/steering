@@ -14,6 +14,7 @@ def get_activation_steering(
         hook_point: str,
         pos_text,
         neg_text,
+        pad_with: str = " ",  # somewhat janky
     ):
     """
     Computes difference in activations between pos and neg at the hook_point.
@@ -28,7 +29,20 @@ def get_activation_steering(
     """
     pos = model.to_tokens(pos_text)
     neg = model.to_tokens(neg_text)
-    assert pos.shape[-1] == neg.shape[-1]
+
+    ### Janky padding
+    n_pos = pos.shape[1]
+    n_neg = neg.shape[1]
+    pad = model.to_tokens(pad_with, prepend_bos=False)
+    pad = pad.repeat(1, abs(n_pos - n_neg))
+    print('pad', pad)
+
+    if n_pos > n_neg:
+        neg = torch.cat([neg, pad], dim=1)
+    elif n_neg > n_pos:
+        pos = torch.cat([pos, pad], dim=1)
+
+    # assert pos.shape[-1] == neg.shape[-1]
 
     _, pos_acts = model.run_with_cache(pos, names_filter=hook_point)
     _, neg_acts = model.run_with_cache(neg, names_filter=hook_point)

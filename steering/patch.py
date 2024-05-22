@@ -10,6 +10,8 @@ from datasets import load_dataset
 from transformer_lens import HookedTransformer
 import transformer_lens.utils as tutils
 
+from steering.eval_utils import evaluate_completions
+
 
 def patch_resid(resid, hook, steering, c=1, pos=0):
     assert len(steering.shape) == 3 # [batch_size, sequence_length, d_model]
@@ -29,6 +31,7 @@ def get_loss(
         ds_name="NeelNanda/c4-code-20k",
         n_batches=20,
         batch_size=8,
+        insertion_pos=0,
     ):
     if scales is None:
         scales = [1]
@@ -49,7 +52,7 @@ def get_loss(
             with model.hooks(fwd_hooks=[(hook_point, partial(patch_resid,
                                                             steering=steering_vector,
                                                             c=scale,
-                                                            pos=0,
+                                                            pos=insertion_pos,
                                                             ))]):
                 loss = model(batch["tokens"], return_type="loss", prepend_bos=False)
                 total_loss += loss.item()
@@ -68,12 +71,13 @@ def generate(
         scale=1,
         n_samples=5,
         max_length=20,
+        insertion_pos=0,
     ):
     gen_texts = []
     with model.hooks(fwd_hooks=[(hook_point, partial(patch_resid,
                                                     steering=steering_vector,
                                                     c=scale,
-                                                    pos=0,
+                                                    pos=insertion_pos,
                                                     ))]):
         for _ in tqdm(range(n_samples)):
             output = model.generate(prompt,
@@ -85,3 +89,37 @@ def generate(
             gen_texts.append(output)
     return gen_texts
     
+
+
+def get_scores_and_losses(
+    model: HookedTransformer,
+    hook_point: str,
+    steering_vector: torch.Tensor,
+    prompt: str,
+    criterion: str,
+    scales: list[float],
+    n_samples = 10,
+    insertion_pos = 0):
+
+    sae_anger_losses = get_loss(model, hook_point, steering_vector=steering_vector, scales=scales, insertion_pos=insertion_pos)
+
+    mean_scores = []
+    all_scores = []
+    for scale in scales:
+        print("scale", scale)
+        gen_texts = generate(model,
+                             hook_point,
+                             prompt=prompt,
+                             steering_vector=steering_vector,
+                             scale=scale, n_samples=n_samples,
+                             insertion_pos=insertion_pos)
+        evals = evaluate_completions(gen_texts, criterion=criterion, prompt=prompt)
+        print(gen_texts)
+        print(evals)
+        scores = [e['score'] for e in evals]
+        mean = sum(scores) / len(scores)
+        mean_scores.append(mean)
+        all_scores.append(scores)
+        print("mean", mean)
+    
+    return mean_scores, all_scores, sae_anger_losses
