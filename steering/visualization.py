@@ -1,5 +1,35 @@
 import pandas as pd
 from IPython.display import display
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def Scatterplot(name, x, y, sizes=[]):
+    # Normalize sizes to a range (e.g., 20 to 200) for better visualization
+    sizes_min = 20
+    sizes_max = 200
+    sizes_normalized = ((np.array(sizes) - min(sizes)) / (max(sizes) - min(sizes))) * (
+        sizes_max - sizes_min
+    ) + sizes_min
+
+    # Create the scatter plot
+    plt.figure(figsize=(10, 6))
+    scatter = plt.scatter(x, y, s=sizes_normalized, alpha=0.6, c=sizes, cmap="viridis")
+
+    # Adding the line connecting all points
+    plt.plot(x, y, linestyle="-", color="gray", alpha=0.5, linewidth=1)
+
+    # Adding labels
+    plt.title("Steering Vector for " + name)
+    plt.xlabel("Scale")
+    plt.ylabel("Score")
+
+    # Adding color bar to indicate the size of the dots
+    colorbar = plt.colorbar(scatter)
+    colorbar.set_label("Loss")
+
+    # Show the plot
+    plt.show()
 
 
 def Table(title, headers, data):
