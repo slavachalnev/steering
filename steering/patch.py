@@ -105,7 +105,9 @@ def get_scores_and_losses(
     criterion: str,
     scales: list[float],
     n_samples = 10,
-    insertion_pos = 0):
+    insertion_pos = 0,
+    explanations = True,
+    ):
 
     sae_anger_losses = get_loss(model, hook_point, steering_vector=steering_vector, scales=scales, insertion_pos=insertion_pos)
 
@@ -119,7 +121,7 @@ def get_scores_and_losses(
                              steering_vector=steering_vector,
                              scale=scale, n_samples=n_samples,
                              insertion_pos=insertion_pos)
-        evals = evaluate_completions(gen_texts, criterion=criterion, prompt=prompt)
+        evals = evaluate_completions(gen_texts, criterion=criterion, prompt=prompt, verbose=explanations)
         print(gen_texts)
         print(evals)
         scores = [e['score'] for e in evals]
