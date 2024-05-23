@@ -149,13 +149,22 @@ def top_activations(activations: torch.Tensor, top_k: int=10):
 
 
 @torch.no_grad()
-def normalise_decoder(sae):
+def normalise_decoder(sae, scale_input=False):
     """
     Normalises the decoder weights of the SAE to have unit norm.
     
     Use this when loading for gemma-2b saes.
+
+    Args:
+        sae (SparseAutoencoder): The sparse autoencoder.
+        scale_input (bool): Use this when loading layer 12 model. Warning: experimental!
     """
     norms = torch.norm(sae.W_dec, dim=1)
     sae.W_dec /= norms[:, None]
     sae.W_enc *= norms[None, :]
     sae.b_enc *= norms
+
+    if scale_input:
+        print("Warning: scaling input is experimental!")
+        sae.b_dec.zero_()
+        sae.W_enc *= 0.2175 # computed in slava_scratch/scale_sae.ipynb
