@@ -15,8 +15,14 @@ from steering.eval_utils import evaluate_completions
 
 def patch_resid(resid, hook, steering, c=1, pos=0):
     assert len(steering.shape) == 3 # [batch_size, sequence_length, d_model]
-    n_toks = min(resid.shape[1] - pos, steering.shape[1])
 
+    if pos is None:
+        # insert at all positions
+        assert steering.shape[1] == 1
+        resid[:, :, :] = resid[:, :, :] + c * steering
+        return resid
+
+    n_toks = min(resid.shape[1] - pos, steering.shape[1])
     if pos < resid.shape[1]:
         resid[:, pos:n_toks+pos, :] = resid[:, pos:n_toks+pos, :] + c * steering[:, :n_toks, :]
     
