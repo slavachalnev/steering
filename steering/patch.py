@@ -35,7 +35,7 @@ def get_loss(
         steering_vector=None,
         scales=None,
         ds_name="NeelNanda/c4-code-20k",
-        n_batches=20,
+        n_batches=50,
         batch_size=8,
         insertion_pos=0,
     ):
@@ -96,6 +96,12 @@ def generate(
     return gen_texts
     
 
+def contains_word(text, word_list):
+    for word in word_list:
+        if word.lower() in text.lower():
+            return True
+    return False
+
 
 def get_scores_and_losses(
     model: HookedTransformer,
@@ -104,15 +110,18 @@ def get_scores_and_losses(
     prompt: str,
     criterion: str,
     scales: list[float],
-    n_samples = 10,
-    insertion_pos = 0,
-    explanations = True,
-    ):
+    n_samples=10,
+    insertion_pos=0,
+    explanations=True,
+    word_list=None,
+):
 
     sae_anger_losses = get_loss(model, hook_point, steering_vector=steering_vector, scales=scales, insertion_pos=insertion_pos)
 
     mean_scores = []
     all_scores = []
+    word_probabilities = []
+
     for scale in scales:
         print("scale", scale)
         gen_texts = generate(model,
@@ -129,5 +138,14 @@ def get_scores_and_losses(
         mean_scores.append(mean)
         all_scores.append(scores)
         print("mean", mean)
-    
-    return mean_scores, all_scores, sae_anger_losses
+        
+        if word_list is not None:
+            count = sum(contains_word(text, word_list) for text in gen_texts)
+            word_prob = count / n_samples
+            word_probabilities.append(word_prob)
+            print("word probability", word_prob)
+
+    if word_list is not None:
+        return mean_scores, all_scores, sae_anger_losses, word_probabilities
+    else:
+        return mean_scores, all_scores, sae_anger_losses

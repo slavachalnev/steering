@@ -157,7 +157,7 @@ def normalise_decoder(sae, scale_input=False):
 
     Args:
         sae (SparseAutoencoder): The sparse autoencoder.
-        scale_input (bool): Use this when loading layer 12 model. Warning: experimental!
+        scale_input (bool): Use this when loading layer 12 model.
     """
     norms = torch.norm(sae.W_dec, dim=1)
     sae.W_dec /= norms[:, None]
@@ -165,6 +165,4 @@ def normalise_decoder(sae, scale_input=False):
     sae.b_enc *= norms
 
     if scale_input:
-        print("Warning: scaling input is experimental!")
-        sae.b_dec.zero_()
         sae.W_enc *= 0.2175 # computed in slava_scratch/scale_sae.ipynb
