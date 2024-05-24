@@ -78,6 +78,7 @@ def generate(
         n_samples=5,
         max_length=20,
         insertion_pos=0,
+        top_k=50,
     ):
     gen_texts = []
     with model.hooks(fwd_hooks=[(hook_point, partial(patch_resid,
@@ -91,6 +92,7 @@ def generate(
                                     use_past_kv_cache=False,
                                     max_new_tokens=max_length,
                                     verbose=False,
+                                    top_k=top_k,
                                     )
             gen_texts.append(output)
     return gen_texts
@@ -114,6 +116,7 @@ def get_scores_and_losses(
     insertion_pos=0,
     explanations=True,
     word_list=None,
+    top_k=50,
 ):
 
     sae_anger_losses = get_loss(model, hook_point, steering_vector=steering_vector, scales=scales, insertion_pos=insertion_pos)
@@ -128,8 +131,11 @@ def get_scores_and_losses(
                              hook_point,
                              prompt=prompt,
                              steering_vector=steering_vector,
-                             scale=scale, n_samples=n_samples,
-                             insertion_pos=insertion_pos)
+                             scale=scale,
+                             n_samples=n_samples,
+                             insertion_pos=insertion_pos,
+                             top_k=top_k,
+                             )
         evals = evaluate_completions(gen_texts, criterion=criterion, prompt=prompt, verbose=explanations)
         print(gen_texts)
         print(evals)
@@ -140,7 +146,10 @@ def get_scores_and_losses(
         print("mean", mean)
         
         if word_list is not None:
-            count = sum(contains_word(text, word_list) for text in gen_texts)
+            count = 0
+            for text in gen_texts:
+                if contains_word(text, word_list):
+                    count += 1
             word_prob = count / n_samples
             word_probabilities.append(word_prob)
             print("word probability", word_prob)
