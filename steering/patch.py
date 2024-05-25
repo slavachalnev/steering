@@ -62,7 +62,7 @@ def get_loss(
                                                             ))]):
                 loss = model(batch["tokens"], return_type="loss", prepend_bos=False)
                 total_loss += loss.item()
-            if i == n_batches:
+            if i >= n_batches-1:
                 break
         losses.append(total_loss / n_batches)
     
