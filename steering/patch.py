@@ -38,7 +38,11 @@ def get_loss(
         n_batches=50,
         batch_size=8,
         insertion_pos=None,
+        patch_fn=None,
     ):
+    if patch_fn is None:
+        patch_fn = patch_resid
+
     if scales is None:
         scales = [1]
     elif not isinstance(scales, list):
@@ -55,7 +59,7 @@ def get_loss(
     for scale in tqdm(scales):
         total_loss = 0
         for i, batch in enumerate(loader):
-            with model.hooks(fwd_hooks=[(hook_point, partial(patch_resid,
+            with model.hooks(fwd_hooks=[(hook_point, partial(patch_fn,
                                                             steering=steering_vector,
                                                             c=scale,
                                                             pos=insertion_pos,
@@ -79,9 +83,13 @@ def generate(
         max_length=20,
         insertion_pos=0,
         top_k=50,
+        patch_fn=None,
     ):
+    if patch_fn is None:
+        patch_fn = patch_resid
+
     gen_texts = []
-    with model.hooks(fwd_hooks=[(hook_point, partial(patch_resid,
+    with model.hooks(fwd_hooks=[(hook_point, partial(patch_fn,
                                                     steering=steering_vector,
                                                     c=scale,
                                                     pos=insertion_pos,
