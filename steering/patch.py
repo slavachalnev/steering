@@ -80,9 +80,10 @@ def generate(
         steering_vector=None,
         scale=1,
         n_samples=5,
-        max_length=20,
+        max_length=25,
         insertion_pos=0,
         top_k=50,
+        top_p=0.3,
         patch_fn=None,
     ):
     if patch_fn is None:
@@ -101,6 +102,7 @@ def generate(
                                     max_new_tokens=max_length,
                                     verbose=False,
                                     top_k=top_k,
+                                    top_p=top_p,
                                     )
             gen_texts.append(output)
     return gen_texts
@@ -220,6 +222,7 @@ def scores_2d(
     n_samples=10,
     insertion_pos=None,
     top_k=50,
+    coherence_criterion="Text is coherent, the grammar is correct.",
     ):
     assert len(steering_vectors) == len(criterions) == 2
 
@@ -237,6 +240,7 @@ def scores_2d(
 
     score_grid_1 = torch.zeros_like(loss_grid, device=device)
     score_grid_2 = torch.zeros_like(loss_grid, device=device)
+    coherence_grid = torch.zeros_like(loss_grid, device=device)
 
     for i in range(len(scales)):
         for j in range(len(scales)):
@@ -254,15 +258,20 @@ def scores_2d(
 
             eval_1 = evaluate_completions(gen_texts, criterion=criterions[0], prompt=prompt, verbose=False)
             eval_2 = evaluate_completions(gen_texts, criterion=criterions[1], prompt=prompt, verbose=False)
+            coherence = evaluate_completions(gen_texts, criterion=coherence_criterion, prompt=prompt, verbose=False)
             print(gen_texts)
 
             scores_1 = [e['score'] for e in eval_1]
             scores_2 = [e['score'] for e in eval_2]
+            coherence_scores = [e['score'] for e in coherence]
             mean_1 = sum(scores_1) / len(scores_1)
             mean_2 = sum(scores_2) / len(scores_2)
+            mean_coherence = sum(coherence_scores) / len(coherence_scores)
             score_grid_1[i, j] = mean_1
             score_grid_2[i, j] = mean_2
+            coherence_grid[i, j] = mean_coherence
             print(criterions[0], mean_1)
             print(criterions[1], mean_2)
+            print(coherence_criterion, mean_coherence)
         
-    return score_grid_1.cpu(), score_grid_2.cpu(), loss_grid.cpu()
+    return score_grid_1.cpu(), score_grid_2.cpu(), loss_grid.cpu(), coherence_grid.cpu()
