@@ -260,14 +260,23 @@ def scores_2d(
                                 top_k=top_k,
                                 )
 
-            eval_1 = evaluate_completions(gen_texts, criterion=criterions[0], prompt=prompt, verbose=False)
-            eval_2 = evaluate_completions(gen_texts, criterion=criterions[1], prompt=prompt, verbose=False)
-            coherence = evaluate_completions(gen_texts, criterion=coherence_criterion, prompt=prompt, verbose=False)
             print(gen_texts)
-
-            scores_1 = [e['score'] for e in eval_1]
-            scores_2 = [e['score'] for e in eval_2]
-            coherence_scores = [e['score'] for e in coherence]
+            try: 
+                eval_1 = evaluate_completions(gen_texts, criterion=criterions[0], prompt=prompt, verbose=False)
+                eval_2 = evaluate_completions(gen_texts, criterion=criterions[1], prompt=prompt, verbose=False)
+                coherence = evaluate_completions(gen_texts, criterion=coherence_criterion, prompt=prompt, verbose=False)
+                scores_1 = [e['score'] for e in eval_1]
+                scores_2 = [e['score'] for e in eval_2]
+                coherence_scores = [e['score'] for e in coherence]
+            except Exception as e: # super hacky retry once.
+                print(e)
+                print("retrying")
+                eval_1 = evaluate_completions(gen_texts, criterion=criterions[0], prompt=prompt, verbose=False)
+                eval_2 = evaluate_completions(gen_texts, criterion=criterions[1], prompt=prompt, verbose=False)
+                coherence = evaluate_completions(gen_texts, criterion=coherence_criterion, prompt=prompt, verbose=False)
+                scores_1 = [e['score'] for e in eval_1]
+                scores_2 = [e['score'] for e in eval_2]
+                coherence_scores = [e['score'] for e in coherence]
 
             all_gen_texts.append(
                 {

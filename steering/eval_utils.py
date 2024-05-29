@@ -28,18 +28,19 @@ The language model was given a prompt and generated the following text. Evaluate
 
 
 def evaluate_completions(completions, criterion, prompt, verbose=True):
-    evals = []
-    for completion in completions:
-        retried = False
-        try:
-            evals.append(evaluate_completion(completion, criterion, prompt, client, verbose=verbose))
-        except Exception as e:
-            if not retried:
-                retried = True
-                evals.append(evaluate_completion(completion, criterion, prompt, client, verbose=verbose))
-            else:
-                raise e
-    return evals
+    # evals = []
+    # for completion in completions:
+    #     retried = False
+    #     try:
+    #         evals.append(evaluate_completion(completion, criterion, prompt, client, verbose=verbose))
+    #     except Exception as e:
+    #         if not retried:
+    #             retried = True
+    #             evals.append(evaluate_completion(completion, criterion, prompt, client, verbose=verbose))
+    #         else:
+    #             raise e
+    # return evals
+    return [evaluate_completion(completion, criterion, prompt, client, verbose=verbose) for completion in completions]
         
 
 # Example usage
