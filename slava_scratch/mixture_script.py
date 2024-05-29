@@ -18,7 +18,7 @@ from sae_lens import SparseAutoencoder, ActivationsStore
 
 from steering.eval_utils import evaluate_completions
 from steering.utils import text_to_sae_feats, top_activations, normalise_decoder, get_activation_steering
-from steering.patch import generate, get_scores_and_losses, patch_resid, get_loss, scores_2d
+from steering.patch import generate, get_scores_and_losses, patch_resid, get_loss, scores_2d, scores_clamp_2d
 
 from sae_vis.data_config_classes import SaeVisConfig
 from sae_vis.data_storing_fns import SaeVisData
@@ -50,10 +50,12 @@ os.makedirs(save_dir)
 
 d1 = sae6.W_dec[feature_ids[0]]
 d2 = sae6.W_dec[feature_ids[1]]
+enc1 = sae6.W_enc[:, feature_ids[0]]
+enc2 = sae6.W_enc[:, feature_ids[1]]
 
 scales = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]
 prompt = "I think"
-
+clamp = False
 
 
 gen_log_file = f"{save_dir}/gen_log.json"
@@ -67,19 +69,36 @@ with open(f"{save_dir}/params.txt", "w") as f:
     f.write(f"criterions: {criterions}\n")
     f.write(f"coherence_criterion: {coherence_criterion}\n")
     f.write(f"n_samples: {n_samples}\n")
+    f.write(f"clamp: {clamp}\n")
 
 
-scores_1, scores_2, losses, coherence_scores = scores_2d(
-    model,
-    hp6,
-    steering_vectors=[d1, d2],
-    prompt=prompt,
-    criterions=criterions,
-    scales=scales,
-    n_samples=n_samples,
-    coherence_criterion=coherence_criterion,
-    gen_log_file=gen_log_file,
-)
+if clamp:
+    scores_1, scores_2, losses, coherence_scores = scores_clamp_2d(
+        model,
+        hp6,
+        # steering_vectors=[d1, d2],
+        steering_encoders=[enc1, enc2],
+        steering_decoders=[d1, d2],
+
+        prompt=prompt,
+        criterions=criterions,
+        scales=scales,
+        n_samples=n_samples,
+        coherence_criterion=coherence_criterion,
+        gen_log_file=gen_log_file,
+    )
+else:
+    scores_1, scores_2, losses, coherence_scores = scores_2d(
+        model,
+        hp6,
+        steering_vectors=[d1, d2],
+        prompt=prompt,
+        criterions=criterions,
+        scales=scales,
+        n_samples=n_samples,
+        coherence_criterion=coherence_criterion,
+        gen_log_file=gen_log_file,
+    )
 
 
 # save the scores and losses
