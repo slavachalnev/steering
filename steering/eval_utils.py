@@ -39,6 +39,7 @@ def evaluate_completions(completions, criterion, prompt, verbose=True):
                 evals.append(evaluate_completion(completion, criterion, prompt, client, verbose=verbose))
             else:
                 raise e
+    return evals
         
 
 # Example usage
