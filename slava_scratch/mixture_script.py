@@ -45,7 +45,8 @@ criterions = ["Text is angry/upset/enraged/distressed or is about anger/hate etc
                 "Text mentions wedding/marriage/engagement."]
 coherence_criterion = "Text is coherent, the grammar is correct."
 n_samples = 50
-
+save_dir = "runs/anger_wedding"
+os.makedirs(save_dir)
 
 d1 = sae6.W_dec[feature_ids[0]]
 d2 = sae6.W_dec[feature_ids[1]]
@@ -54,8 +55,6 @@ scales = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]
 prompt = "I think"
 
 
-save_dir = "runs/anger_wedding"
-os.makedirs(save_dir)
 
 gen_log_file = f"{save_dir}/gen_log.json"
 
