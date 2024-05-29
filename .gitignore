@@ -165,3 +165,7 @@ cython_debug/
 
 # feature vis
 *.html
+
+*.pt
+
+*/runs/

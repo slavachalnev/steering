@@ -1,6 +1,7 @@
 
 from functools import partial
 from tqdm import tqdm
+import json
 
 import torch
 from torch.utils.data import DataLoader
@@ -223,6 +224,7 @@ def scores_2d(
     insertion_pos=None,
     top_k=50,
     coherence_criterion="Text is coherent, the grammar is correct.",
+    gen_log_file=None,
     ):
     assert len(steering_vectors) == len(criterions) == 2
 
@@ -241,6 +243,8 @@ def scores_2d(
     score_grid_1 = torch.zeros_like(loss_grid, device=device)
     score_grid_2 = torch.zeros_like(loss_grid, device=device)
     coherence_grid = torch.zeros_like(loss_grid, device=device)
+
+    all_gen_texts = []
 
     for i in range(len(scales)):
         for j in range(len(scales)):
@@ -264,6 +268,17 @@ def scores_2d(
             scores_1 = [e['score'] for e in eval_1]
             scores_2 = [e['score'] for e in eval_2]
             coherence_scores = [e['score'] for e in coherence]
+
+            all_gen_texts.append(
+                {
+                    "texts": gen_texts,
+                    "scales": [scales[i], scales[j]],
+                    "scores_1": scores_1,
+                    "scores_2": scores_2,
+                    "coherence_scores": coherence_scores,
+                }
+            )
+
             mean_1 = sum(scores_1) / len(scores_1)
             mean_2 = sum(scores_2) / len(scores_2)
             mean_coherence = sum(coherence_scores) / len(coherence_scores)
@@ -273,5 +288,9 @@ def scores_2d(
             print(criterions[0], mean_1)
             print(criterions[1], mean_2)
             print(coherence_criterion, mean_coherence)
+    
+    if gen_log_file is not None:
+        with open(gen_log_file, "w") as f:
+            f.write(json.dumps(all_gen_texts))
         
     return score_grid_1.cpu(), score_grid_2.cpu(), loss_grid.cpu(), coherence_grid.cpu()
