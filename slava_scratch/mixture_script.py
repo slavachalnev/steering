@@ -53,7 +53,7 @@ d2 = sae6.W_dec[feature_ids[1]]
 enc1 = sae6.W_enc[:, feature_ids[0]]
 enc2 = sae6.W_enc[:, feature_ids[1]]
 
-scales = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]
+scales = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
 prompt = "I think"
 clamp = False
 
