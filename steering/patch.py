@@ -83,7 +83,7 @@ def generate(
         scale=1,
         n_samples=5,
         max_length=25,
-        insertion_pos=0,
+        insertion_pos=None,
         top_k=50,
         top_p=0.3,
         patch_fn=None,
